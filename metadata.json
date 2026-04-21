@@ -1,0 +1,6 @@
+{
+  "name": "Smart Customer Management Portal",
+  "description": "An AI-driven customer management portal for networking hardware companies, featuring NL search, health scores, churn prediction, and automated email summaries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

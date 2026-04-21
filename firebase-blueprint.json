@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "A networking hardware customer record",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Company name" },
+        "region": { "type": "string", "description": "Geographical region" },
+        "planTier": { "type": "string", "enum": ["Basic", "Standard", "Premium", "Enterprise"] },
+        "contractStartDate": { "type": "string", "format": "date-time" },
+        "contractEndDate": { "type": "string", "format": "date-time" },
+        "deviceInventoryCount": { "type": "integer" },
+        "avgMonthlyUsage": { "type": "number" },
+        "npsScore": { "type": "integer" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "region", "planTier", "contractStartDate", "contractEndDate"]
+    },
+    "Ticket": {
+      "title": "Support Ticket",
+      "description": "A support request from a customer",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "status": { "type": "string", "enum": ["Open", "In Progress", "Resolved", "Closed"] },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "severity", "status", "category", "description"]
+    },
+    "Insight": {
+      "title": "Customer Insight",
+      "description": "AI-generated health scores and churn predictions",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "healthScore": { "type": "integer", "description": "0-100 score" },
+        "churnRisk": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "churnProbability": { "type": "number" },
+        "topRiskFactors": { "type": "array", "items": { "type": "string" } },
+        "lastCalculated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "healthScore", "churnRisk"]
+    }
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Main customer records"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Support tickets for all customers"
+    },
+    "/insights/{customerId}": {
+      "schema": "Insight",
+      "description": "AI-driven insights per customer"
+    }
+  }
+}

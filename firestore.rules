@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function validateString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['name', 'region', 'planTier', 'contractStartDate', 'contractEndDate', 'deviceInventoryCount', 'avgMonthlyUsage', 'npsScore', 'lastUpdated'])
+        && data.keys().size() == 9
+        && validateString(data.name, 100)
+        && validateString(data.region, 50)
+        && data.planTier in ['Basic', 'Standard', 'Premium', 'Enterprise']
+        && data.deviceInventoryCount is int
+        && data.avgMonthlyUsage is number
+        && data.npsScore is int
+        && data.lastUpdated == request.time;
+    }
+
+    function isValidTicket(data) {
+      return data.keys().hasAll(['customerId', 'severity', 'status', 'category', 'description', 'createdAt'])
+        && data.keys().size() == 6
+        && isValidId(data.customerId)
+        && data.severity in ['Low', 'Medium', 'High', 'Critical']
+        && data.status in ['Open', 'In Progress', 'Resolved', 'Closed']
+        && validateString(data.category, 50)
+        && validateString(data.description, 2000)
+        && data.createdAt == request.time;
+    }
+
+    function isValidInsight(data) {
+      return data.keys().hasAll(['customerId', 'healthScore', 'churnRisk', 'churnProbability', 'topRiskFactors', 'lastCalculated'])
+        && data.keys().size() == 6
+        && isValidId(data.customerId)
+        && data.healthScore is int && data.healthScore >= 0 && data.healthScore <= 100
+        && data.churnRisk in ['Low', 'Medium', 'High']
+        && data.churnProbability is number
+        && data.topRiskFactors is list
+        && data.lastCalculated == request.time;
+    }
+
+    match /customers/{customerId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming());
+      allow update: if isSignedIn() && isValidId(customerId) && isValidCustomer(incoming());
+      allow delete: if isSignedIn() && isValidId(customerId);
+    }
+
+    match /tickets/{ticketId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(ticketId) && isValidTicket(incoming());
+      allow update: if isSignedIn() && isValidId(ticketId) && isValidTicket(incoming())
+        && (existing().status != 'Closed' || incoming().status == 'Closed'); // Simple terminal state check
+      allow delete: if isSignedIn() && isValidId(ticketId);
+    }
+
+    match /insights/{customerId} {
+      allow get, list: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(customerId) && isValidInsight(incoming());
+    }
+  }
+}
